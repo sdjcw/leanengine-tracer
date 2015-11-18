@@ -1,0 +1,17 @@
+{
+  "name": "leanengine-tracer",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "on-headers": "^1.0.1"
+  }
+}
