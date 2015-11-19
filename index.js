@@ -15,12 +15,13 @@ var tracer = module.exports = function(options) {
       d.run(next);
     }
     var start = process.hrtime();
-    req._leanengineTracer = {last: start, stack: new Error().stack};
+    req._leanengineTracer = {url: req.url, last: start, stack: new Error().stack};
 
     onHeaders(res, function() {
       var duration = getDuration();
       if (duration > limit) {
-        console.log('tracer:', getCodePoint(getTracer().stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
+        var t = getTracer();
+        console.log('tracer:', t.url, getCodePoint(t.stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
       }
     });
   };
@@ -30,11 +31,11 @@ tracer.pin = function() {
   if (!getTracer()) {
     return console.error('tracer: OMG...');
   }
+  var t = getTracer();
   var duration = getDuration();
   if (duration > limit) {
-    console.log('tracer:', getCodePoint(getTracer().stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
+    console.log('tracer:', t.url, getCodePoint(t.stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
   }
-  var t = getTracer();
   t.last = process.hrtime();
   t.stack = new Error().stack;
 };
