@@ -4,6 +4,7 @@ var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var domain = require('domain');
 
 var tracer = require('../');
 
@@ -25,6 +26,26 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// domainWrapper
+app.use(function(req, res, next) {
+  var d = domain.create();
+  d.__flag = 1;
+  d.add(req);
+  d.add(res);
+  d.on('error', function(err) {
+    console.error('uncaughtException url=%s, msg=%s', req.url, err.stack || err.message || err);
+    if(!res.finished) {
+      res.statusCode = 500;
+      res.setHeader('content-type', 'application/json; charset=UTF-8');
+      return res.json({
+        code: 1,
+        error: 'API请求异常'
+      });
+    }
+  });
+  d.run(next);
+});
+
 app.use('/', routes);
 app.use('/users', users);
 
@@ -41,6 +62,7 @@ app.use(function(req, res, next) {
 // will print stacktrace
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
+    tracer.pin();
     res.status(err.status || 500);
     res.render('error', {
       message: err.message,

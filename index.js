@@ -15,33 +15,44 @@ var tracer = module.exports = function(options) {
       d.run(next);
     }
     var start = process.hrtime();
-    d._leanengineTracer = {last: start, stack: new Error().stack};
+    req._leanengineTracer = {last: start, stack: new Error().stack};
 
     onHeaders(res, function() {
       var duration = getDuration();
       if (duration > limit) {
-        console.log('tracer:', getCodePoint(domain._stack[0]._leanengineTracer.stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
+        console.log('tracer:', getCodePoint(getTracer().stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
       }
     });
   };
 };
 
 tracer.pin = function() {
-  if (!domain._stack[0]) {
-    return console.error('OMG...');
+  if (!getTracer()) {
+    return console.error('tracer: OMG...');
   }
   var duration = getDuration();
   if (duration > limit) {
-    console.log('tracer:', getCodePoint(domain._stack[0]._leanengineTracer.stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
+    console.log('tracer:', getCodePoint(getTracer().stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
   }
-  domain._stack[0]._leanengineTracer = {
-    last: process.hrtime(),
-    stack: new Error().stack
-  };
+  var t = getTracer();
+  t.last = process.hrtime();
+  t.stack = new Error().stack;
+};
+
+var getTracer = function() {
+  var result = null;
+  domain._stack.forEach(function(d) {
+    d.members.forEach(function(m) {
+      if (m._leanengineTracer) {
+        result = m._leanengineTracer;
+      }
+    });
+  });
+  return result;
 };
 
 var getDuration = function() {
-  var diff = process.hrtime(domain._stack[0]._leanengineTracer.last);
+  var diff = process.hrtime(getTracer().last);
   return (diff[0] * 1e9 + diff[1]);
 };
 
