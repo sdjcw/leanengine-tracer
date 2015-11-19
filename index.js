@@ -7,13 +7,6 @@ var limit;
 var tracer = module.exports = function(options) {
   limit = options.limit * 1000000;
   return function(req, res, next) {
-    var d = domain._stack[0];
-    if (!d) {
-      d = domain.create();
-      d.add(req);
-      d.add(res);
-      d.run(next);
-    }
     var start = process.hrtime();
     req._leanengineTracer = {url: req.url, last: start, stack: new Error().stack};
 
@@ -24,6 +17,16 @@ var tracer = module.exports = function(options) {
         console.log('tracer:', t.url, getCodePoint(t.stack), '->', getCodePoint(new Error().stack), duration / 1000000, 'ms');
       }
     });
+
+    var d = domain._stack[0];
+    if (!d) {
+      d = domain.create();
+      d.add(req);
+      d.add(res);
+      d.run(next);
+    } else {
+      next();
+    }
   };
 };
 
